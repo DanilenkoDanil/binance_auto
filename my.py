@@ -1,19 +1,13 @@
 from binance.client import Client
 from db import DataBase
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram import Bot, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 import json
 import asyncio
-import math
 import sys
-from aiogram.types import ReplyKeyboardRemove, \
-    ReplyKeyboardMarkup, KeyboardButton, \
-    InlineKeyboardMarkup, InlineKeyboardButton
-# Похоже весь секрет в количестве ордеров, их просто 3 сразу
 # Каунтер при флете
 
 
@@ -67,7 +61,6 @@ def make_limit_order_full(symbol: str, stop_price: str, leverage: int, quantity:
                                 timeInForce='GTC',
                                 stopPrice=stop_price)
 
-
     client.futures_create_order(symbol=symbol,
                                 side='BUY',
                                 positionSide='BOTH',
@@ -77,7 +70,7 @@ def make_limit_order_full(symbol: str, stop_price: str, leverage: int, quantity:
                                 price=price)
 
 
-def new_stop_lose(symbol: str, stop_price: str, quantity: str):
+def new_stop_lose(symbol: str, stop_price: str):
     try:
         client.futures_create_order(symbol=symbol,
                                     side='SELL',
@@ -208,81 +201,77 @@ async def is_enabled():
             print('--------------------')
             for i in targets.keys():
                 try:
-                    # 5 стоп лоссов вместо одного
-                    if float(positions[i]['entryPrice']) != 0 and i not in open_orders:
-                        amount = str(round(float(targets[i][1]) / float(orders[i]['markPrice']) * targets[i][3],
-                                           int(exchange[i]['quantityPrecision'])))
-                        new_price = str(
-                            float(positions[i]['entryPrice']) + 2 * float(exchange[i]['filters'][0]['tickSize']))
-                        new_price = str(round(float(new_price), int(exchange[i]["pricePrecision"])))
-                        try:
-                            new_stop_lose(i, positions[i]['entryPrice'], amount)
-                            new_stop_lose(i, new_price, amount)
-                        except Exception as e:
-                            print(e)
-                        print(f'{i} - Добавлен стоп лосс')
-                    elif i in open_orders and float(open_orders[i]['stopPrice']) < float(positions[i]['entryPrice']) <= \
-                            float(orders[i]['markPrice']) and \
-                            not check_limit_order(open_orders_no_dict, i)\
-                            and float(positions[i]['entryPrice']) != 0:
-                        amount = str(round(float(targets[i][1]) / float(orders[i]['markPrice']) * targets[i][3],
-                                           int(exchange[i]['quantityPrecision'])))
-                        new_price = str(float(positions[i]['entryPrice']) + 2 * float(exchange[i]['filters'][0]['tickSize']))
-                        new_price = str(round(float(new_price), int(exchange[i]["pricePrecision"])))
-                        try:
-                            new_stop_lose(i, positions[i]['entryPrice'], amount)
-                            new_stop_lose(i, new_price, amount)
-                        except Exception as e:
-                            print(e)
-                        print(f'{i} - Апдейт стопа')
-                    elif i in open_orders and float(open_orders[i]['stopPrice']) == float(positions[i]['entryPrice']) <= \
-                            float(orders[i]['markPrice']) and \
-                            not check_limit_order(open_orders_no_dict, i)\
-                            and float(positions[i]['entryPrice']) != 0:
-                        amount = str(round(float(targets[i][1]) / float(orders[i]['markPrice']) * targets[i][3],
-                                           int(exchange[i]['quantityPrecision'])))
-                        new_price = str(float(positions[i]['entryPrice']) + float(exchange[i]['filters'][0]['tickSize']))
-                        new_price = str(round(float(new_price), int(exchange[i]["pricePrecision"])))
-                        try:
-                            new_stop_lose(i, new_price, amount)
-                        except Exception as e:
-                            print(e)
-                    else:
-                        print(f'{i} - Уже куплен')
-                    if float(positions[i]['entryPrice']) == 0 and not check_limit_order(open_orders_no_dict, i):
-                        if float(orders[i]['markPrice']) > float(targets[i][0]) and int(targets[i][2]) == 0:
-                            print(float(targets[i][0]))
-                            print(create_nine(exchange[i]["pricePrecision"]))
-                            stop_loss = str(float(targets[i][0]) - 2 * float(exchange[i]['filters'][0]['tickSize']))
-                            stop_loss = str(round(float(stop_loss), int(exchange[i]["pricePrecision"])))
-
+                    if int(targets[i][2]) < 4:
+                        if float(positions[i]['entryPrice']) != 0 and i not in open_orders:
+                            new_price = str(
+                                float(positions[i]['entryPrice']) + 2 * float(exchange[i]['filters'][0]['tickSize']))
+                            new_price = str(round(float(new_price), int(exchange[i]["pricePrecision"])))
                             try:
-                                amount = str(round(float(targets[i][1]) / float(orders[i]['markPrice']) * targets[i][3],
-                                                   int(exchange[i]['quantityPrecision'])))
-                                make_limit_order_full(i, stop_loss, targets[i][3], amount, targets[i][0])
-                                database.new_counter(i, int(targets[i][2]) + 1)
+                                new_stop_lose(i, positions[i]['entryPrice'])
+                                new_stop_lose(i, new_price)
                             except Exception as e:
                                 print(e)
-
-                            print(f'{targets[i]} - куплен!')
-                        elif float(orders[i]['markPrice']) >= float(targets[i][0]):
-                            stop_loss = str(float(orders[i]['markPrice']) - float(exchange[i]['filters'][0]['tickSize']))
-                            print('Маркет')
-                            print(orders[i]['markPrice'])
-                            print(str(float(orders[i]['markPrice']) - 2 * float(exchange[i]['filters'][0]['tickSize'])))
-                            stop_loss = str(round(float(stop_loss), int(exchange[i]["pricePrecision"])))
+                            print(f'{i} - Добавлен стоп лосс')
+                        elif i in open_orders and float(open_orders[i]['stopPrice']) < float(positions[i]['entryPrice']) <= \
+                                float(orders[i]['markPrice']) and \
+                                not check_limit_order(open_orders_no_dict, i)\
+                                and float(positions[i]['entryPrice']) != 0:
+                            new_price = str(float(positions[i]['entryPrice']) + 2 * float(exchange[i]['filters'][0]['tickSize']))
+                            new_price = str(round(float(new_price), int(exchange[i]["pricePrecision"])))
                             try:
-                                amount = str(round(float(targets[i][1])/float(orders[i]['markPrice']) * targets[i][3],
-                                                   int(exchange[i]['quantityPrecision'])))
-                                make_order_full(i, stop_loss, targets[i][3], amount)
-                                database.new_counter(i, int(targets[i][2]) + 1)
+                                new_stop_lose(i, positions[i]['entryPrice'])
+                                new_stop_lose(i, new_price)
                             except Exception as e:
                                 print(e)
-
-                            print(f'{targets[i]} - куплен!')
-
+                            print(f'{i} - Апдейт стопа')
+                        elif i in open_orders and float(open_orders[i]['stopPrice']) == float(positions[i]['entryPrice']) <= \
+                                float(orders[i]['markPrice']) and \
+                                not check_limit_order(open_orders_no_dict, i)\
+                                and float(positions[i]['entryPrice']) != 0:
+                            new_price = str(float(positions[i]['entryPrice']) + float(exchange[i]['filters'][0]['tickSize']))
+                            new_price = str(round(float(new_price), int(exchange[i]["pricePrecision"])))
+                            try:
+                                new_stop_lose(i, new_price)
+                            except Exception as e:
+                                print(e)
                         else:
-                            print(f"{targets[i][0]} - Не достиг нужной цены")
+                            print(f'{i} - Уже куплен')
+                        if float(positions[i]['entryPrice']) == 0 and not check_limit_order(open_orders_no_dict, i):
+                            if float(orders[i]['markPrice']) > float(targets[i][0]) and int(targets[i][2]) == 0:
+                                print(float(targets[i][0]))
+                                print(create_nine(exchange[i]["pricePrecision"]))
+                                stop_loss = str(float(targets[i][0]) - 2 * float(exchange[i]['filters'][0]['tickSize']))
+                                stop_loss = str(round(float(stop_loss), int(exchange[i]["pricePrecision"])))
+
+                                try:
+                                    amount = str(round(float(targets[i][1]) / float(orders[i]['markPrice']) * targets[i][3],
+                                                       int(exchange[i]['quantityPrecision'])))
+                                    make_limit_order_full(i, stop_loss, targets[i][3], amount, targets[i][0])
+                                    database.new_counter(i, int(targets[i][2]) + 1)
+                                except Exception as e:
+                                    print(e)
+
+                                print(f'{targets[i]} - куплен!')
+                            elif float(orders[i]['markPrice']) >= float(targets[i][0]):
+                                stop_loss = str(float(orders[i]['markPrice']) - float(exchange[i]['filters'][0]['tickSize']))
+                                print('Маркет')
+                                print(orders[i]['markPrice'])
+                                print(str(float(orders[i]['markPrice']) - 2 * float(exchange[i]['filters'][0]['tickSize'])))
+                                stop_loss = str(round(float(stop_loss), int(exchange[i]["pricePrecision"])))
+                                try:
+                                    amount = str(round(float(targets[i][1])/float(orders[i]['markPrice']) * targets[i][3],
+                                                       int(exchange[i]['quantityPrecision'])))
+                                    make_order_full(i, stop_loss, targets[i][3], amount)
+                                    database.new_counter(i, int(targets[i][2]) + 1)
+                                except Exception as e:
+                                    print(e)
+
+                                print(f'{targets[i]} - куплен!')
+
+                            else:
+                                print(f"{targets[i][0]} - Не достиг нужной цены")
+                    else:
+                        print('Достигнут каунтер')
                 except KeyError:
                     continue
             await asyncio.sleep(5)
@@ -294,21 +283,6 @@ async def is_enabled():
 async def on_startup(x):
     asyncio.create_task(is_enabled())
 
-#
+
 if __name__ == '__main__':
     executor.start_polling(dispatcher=dp, skip_updates=True, on_startup=on_startup)
-# exchange = convert_to_dict(client.futures_exchange_info()['symbols'])
-# print(exchange['BNBUSDT']['filters'][0]['tickSize'])
-# print(convert_to_dict(client.futures_position_information())['LINKUSDT'])
-# open_orders = convert_to_dict(client.futures_get_open_orders())
-# print(open_orders)
-
-
-# 110 - текущая цена
-# 100 - target
-# print(convert_to_dict(client.futures_get_open_orders())['XRPUSDT'])
-
-
-
-# import time
-# print((1642330657318 - time.time())/60)
