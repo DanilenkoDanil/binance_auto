@@ -21,8 +21,8 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 database = DataBase('db.db')
 
-pub = 'TmCZsJp55qJPOWgleRLsWv8VBmFq4BIBQMCy2nWQI4t48fTT7x6ums4keMXL7Azv'
-pri = 'sYMXl1urFA8TlU71BvV4JeDAcs3r89bXFou2vDVDQNhudo7hW4oNJ6QNRqUb9iCG'
+pub = 'your_key'
+pri = 'your_key'
 
 client = Client(pub, pri)
 
