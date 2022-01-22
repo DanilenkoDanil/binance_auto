@@ -144,13 +144,17 @@ async def process_start_command(message: types.Message, state: FSMContext):
 async def help_message(message: types.Message, state: FSMContext):
     try:
         symbol = str(message.text.split(' ')[1])
+        if 'USDT' not in symbol:
+            symbol = symbol + "USDT"
         value = float(str(message.text.split(' ')[2]))
         dollar = float(str(message.text.split(' ')[3]))
         leverage = float(str(message.text.split(' ')[4]))
+        stop_counter = float(str(message.text.split(' ')[5]))
+        percent_counter = float(str(message.text.split(' ')[6]))
         if database.check_symbol(symbol):
-            database.new_value(symbol, value, dollar, leverage)
+            database.new_value(symbol, value, dollar, leverage, stop_counter, percent_counter)
         else:
-            database.register(symbol, value, dollar, leverage)
+            database.register(symbol, value, dollar, leverage, stop_counter, percent_counter)
         await bot.send_message(message.from_user.id, 'Символ добавлен/изменён',
                                parse_mode='html')
     except ValueError:
@@ -201,7 +205,7 @@ async def is_enabled():
             print('--------------------')
             for i in targets.keys():
                 try:
-                    if int(targets[i][2]) < 4:
+                    if int(targets[i][2]) < targets[i][4]:
                         if float(positions[i]['entryPrice']) != 0 and i not in open_orders:
                             new_price = str(
                                 float(positions[i]['entryPrice']) + 2 * float(exchange[i]['filters'][0]['tickSize']))
@@ -271,12 +275,17 @@ async def is_enabled():
                             else:
                                 print(f"{targets[i][0]} - Не достиг нужной цены")
                     else:
+                        new_price = str(float(targets[i][0]) + float(targets[i][0])/100 * float(targets[i][5]))
+                        database.new_price(i, new_price)
+                        database.null_counter(i)
                         print('Достигнут каунтер')
                 except KeyError:
                     continue
             await asyncio.sleep(5)
         except Exception as e:
             print(e)
+            for i in admin_list:
+                await bot.send_message(i, str(e))
             await asyncio.sleep(60)
 
 
