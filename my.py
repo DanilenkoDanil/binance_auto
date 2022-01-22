@@ -205,7 +205,7 @@ async def is_enabled():
             print('--------------------')
             for i in targets.keys():
                 try:
-                    if int(targets[i][2]) < targets[i][4]:
+                    if int(targets[i][2]) < int(targets[i][4]):
                         if float(positions[i]['entryPrice']) != 0 and i not in open_orders:
                             new_price = str(
                                 float(positions[i]['entryPrice']) + 2 * float(exchange[i]['filters'][0]['tickSize']))
