@@ -285,7 +285,10 @@ async def is_enabled():
         except Exception as e:
             print(e)
             for i in admin_list:
-                await bot.send_message(i, str(e))
+                try:
+                    await bot.send_message(i, str(e))
+                except Exception as a:
+                    print(a)
             await asyncio.sleep(60)
 
 
