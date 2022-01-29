@@ -21,8 +21,8 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 database = DataBase('db.db')
 
-pub = 'your_key'
-pri = 'your_key'
+pub = 'TmCZsJp55qJPOWgleRLsWv8VBmFq4BIBQMCy2nWQI4t48fTT7x6ums4keMXL7Azv'
+pri = 'sYMXl1urFA8TlU71BvV4JeDAcs3r89bXFou2vDVDQNhudo7hW4oNJ6QNRqUb9iCG'
 
 client = Client(pub, pri)
 
@@ -142,54 +142,58 @@ async def process_start_command(message: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda message: '/add_symbol' in message.text)
 async def help_message(message: types.Message, state: FSMContext):
-    try:
-        symbol = str(message.text.split(' ')[1])
-        if 'USDT' not in symbol:
-            symbol = symbol + "USDT"
-        value = float(str(message.text.split(' ')[2]))
-        dollar = float(str(message.text.split(' ')[3]))
-        leverage = float(str(message.text.split(' ')[4]))
-        stop_counter = float(str(message.text.split(' ')[5]))
-        percent_counter = float(str(message.text.split(' ')[6]))
-        if database.check_symbol(symbol):
-            database.new_value(symbol, value, dollar, leverage, stop_counter, percent_counter)
-        else:
-            database.register(symbol, value, dollar, leverage, stop_counter, percent_counter)
-        await bot.send_message(message.from_user.id, 'Символ добавлен/изменён',
-                               parse_mode='html')
-    except ValueError:
-        await bot.send_message(message.from_user.id, 'Чтобы изменить или добавить символ вам нужнно ввести значение.',
-                               parse_mode='html')
+    if str(message.from_user.id) in admin_list:
+        try:
+            symbol = str(message.text.split(' ')[1])
+            if 'USDT' not in symbol:
+                symbol = symbol + "USDT"
+            value = float(str(message.text.split(' ')[2]))
+            dollar = float(str(message.text.split(' ')[3]))
+            leverage = float(str(message.text.split(' ')[4]))
+            stop_counter = float(str(message.text.split(' ')[5]))
+            percent_counter = float(str(message.text.split(' ')[6]))
+            if database.check_symbol(symbol):
+                database.new_value(symbol, value, dollar, leverage, stop_counter, percent_counter)
+            else:
+                database.register(symbol, value, dollar, leverage, stop_counter, percent_counter)
+            await bot.send_message(message.from_user.id, 'Символ добавлен/изменён',
+                                   parse_mode='html')
+        except ValueError:
+            await bot.send_message(message.from_user.id, 'Чтобы изменить или добавить символ вам нужнно ввести значение.',
+                                   parse_mode='html')
 
 
 @dp.message_handler(lambda message: '/delete_symbol' in message.text)
 async def help_message(message: types.Message, state: FSMContext):
-    try:
-        symbol = str(message.text.split(' ')[1])
-        database.delete(symbol)
+    if str(message.from_user.id) in admin_list:
+        try:
+            symbol = str(message.text.split(' ')[1])
+            database.delete(symbol)
 
-        await bot.send_message(message.from_user.id, 'Символ удалён.',
-                               parse_mode='html')
-    except Exception as e:
-        print(e)
+            await bot.send_message(message.from_user.id, 'Символ удалён.',
+                                   parse_mode='html')
+        except Exception as e:
+            print(e)
 
 
 @dp.message_handler(lambda message: '/list' in message.text)
 async def help_message(message: types.Message, state: FSMContext):
-    try:
-        symbol = database.get_symbols()
-        for i in symbol.keys():
-            await bot.send_message(message.from_user.id, f'{i} - {symbol[i]}',
-                                   parse_mode='html')
-    except Exception as e:
-        print(e)
+    if str(message.from_user.id) in admin_list:
+        try:
+            symbol = database.get_symbols()
+            for i in symbol.keys():
+                await bot.send_message(message.from_user.id, f'{i} - {symbol[i]}',
+                                       parse_mode='html')
+        except Exception as e:
+            print(e)
 
 
 @dp.message_handler(lambda message: '/stop' in message.text)
 async def help_message(message: types.Message, state: FSMContext):
-    await bot.send_message(message.from_user.id, 'Бот остановлен',
-                           parse_mode='html')
-    sys.exit()
+    if str(message.from_user.id) in admin_list:
+        await bot.send_message(message.from_user.id, 'Бот остановлен',
+                               parse_mode='html')
+        sys.exit()
 
 
 async def is_enabled():
