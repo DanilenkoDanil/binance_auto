@@ -1,0 +1,14 @@
+[Unit]
+Description=Telegram Bot
+After=network.target
+
+[Service]
+User=binance_auto
+Group=binance_auto
+
+WorkingDirectory=/home/binance_auto/binance_auto/
+Environment="PYTHONPATH=/home/binance_auto/binance_auto/"
+ExecStart=/home/binance_auto/binance_auto/.venv/bin/python /home/binance_auto/binance_auto/my.py
+
+[Install]
+WantedBy=multi-user.target
